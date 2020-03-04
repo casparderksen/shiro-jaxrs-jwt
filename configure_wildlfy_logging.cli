@@ -1,0 +1,3 @@
+connect
+/subsystem=logging/logger=com.acme:add(level=DEBUG)
+/subsystem=logging/console-handler=CONSOLE:write-attribute(name=level, value=DEBUG)
