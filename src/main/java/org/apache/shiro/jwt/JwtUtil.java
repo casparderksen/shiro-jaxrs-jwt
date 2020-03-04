@@ -7,9 +7,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authz.AuthorizationException;
-import org.apache.shiro.authz.UnauthorizedException;
 
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
@@ -26,12 +24,12 @@ public class JwtUtil {
     public static SignedJWT extractJwtToken(String authorizationHeader) {
         String[] parts = authorizationHeader.split("\\s+");
         if (parts.length != 2 || !parts[0].equalsIgnoreCase(BEARER)) {
-            throw new UnauthorizedException("missing Bearer token");
+            throw new AuthorizationException("missing Bearer token");
         }
         try {
             return SignedJWT.parse(parts[1]);
         } catch (ParseException exception) {
-            throw new UnauthorizedException("invalid Bearer token");
+            throw new AuthorizationException("invalid Bearer token");
         }
     }
 
@@ -39,11 +37,11 @@ public class JwtUtil {
         try {
             JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
             if (jwtClaimsSet == null) {
-                throw new AuthenticationException("missing claims in JWT token");
+                throw new AuthorizationException("missing claims in JWT token");
             }
             return jwtClaimsSet;
         } catch (ParseException exception) {
-            throw new AuthenticationException("invalid JWT token");
+            throw new AuthorizationException("invalid JWT token");
         }
     }
 
@@ -86,7 +84,7 @@ public class JwtUtil {
             JWSVerifier verifier = new RSASSAVerifier(rsaPublicKey);
             return signedJWT.verify(verifier);
         } catch (JOSEException exception) {
-            throw new AuthenticationException("invalid JWT token");
+            throw new AuthorizationException("invalid JWT token");
         }
     }
 
