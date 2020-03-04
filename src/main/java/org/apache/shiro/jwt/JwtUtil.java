@@ -1,5 +1,8 @@
 package org.apache.shiro.jwt;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AccessLevel;
@@ -8,7 +11,9 @@ import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.UnauthorizedException;
 
+import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -73,5 +78,21 @@ public class JwtUtil {
         } catch (ParseException e) {
             throw new AuthorizationException("invalid claim: " + claim);
         }
+    }
+
+
+    public static boolean verifyJwtToken(SignedJWT signedJWT, RSAPublicKey rsaPublicKey) {
+        try {
+            JWSVerifier verifier = new RSASSAVerifier(rsaPublicKey);
+            return signedJWT.verify(verifier);
+        } catch (JOSEException exception) {
+            throw new AuthenticationException("invalid JWT token");
+        }
+    }
+
+    public static boolean verifyExpirationDate(SignedJWT signedJWT) {
+        JWTClaimsSet jwtClaimsSet = JwtUtil.getJwtClaimsSet(signedJWT);
+        Date expirationTime = jwtClaimsSet.getExpirationTime();
+        return new Date().before(expirationTime);
     }
 }

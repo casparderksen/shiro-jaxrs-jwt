@@ -88,34 +88,19 @@ public class JwtRealm extends TextConfigurationRealm {
         SignedJWT signedJWT = (SignedJWT) jwtAuthenticationToken.getCredentials();
 
         // Check that the token is valid
-        if (!verifyJwtToken(signedJWT)) {
+        if (!JwtUtil.verifyJwtToken(signedJWT, rsaPublicKey)) {
             log.warn("token invalid");
             return null;
         }
 
         // Check that the token has not expired
-        if (!verifyExpirationDate(signedJWT)) {
+        if (!JwtUtil.verifyExpirationDate(signedJWT)) {
             log.warn("token expired");
             return null;
         }
 
         // Create and return AuthenticationInfo
         return new SimpleAuthenticationInfo(token.getPrincipal(), token.getCredentials(), getName());
-    }
-
-    private boolean verifyJwtToken(SignedJWT signedJWT) {
-        try {
-            JWSVerifier verifier = new RSASSAVerifier(rsaPublicKey);
-            return signedJWT.verify(verifier);
-        } catch (JOSEException exception) {
-            throw new AuthenticationException("invalid JWT token");
-        }
-    }
-
-    private boolean verifyExpirationDate(SignedJWT signedJWT) {
-        JWTClaimsSet jwtClaimsSet = JwtUtil.getJwtClaimsSet(signedJWT);
-        Date expirationTime = jwtClaimsSet.getExpirationTime();
-        return new Date().before(expirationTime);
     }
 
     @Override
