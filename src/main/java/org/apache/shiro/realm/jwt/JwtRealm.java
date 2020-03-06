@@ -31,8 +31,8 @@ import java.util.Set;
 @Slf4j
 public class JwtRealm extends AuthorizingRealm {
 
-    private RSAPublicKey rsaPublicKey;
     private PermissionProvider permissionProvider;
+    private RSAPublicKey rsaPublicKey;
 
     public JwtRealm() {
         // Support JwtAuthenticationToken for authentication
@@ -73,7 +73,7 @@ public class JwtRealm extends AuthorizingRealm {
         // Check that the token has not expired
         if (!JwtVerifier.verifyExpirationDate(signedJWT)) {
             log.warn("token expired");
-            //return null;
+            return null;
         }
 
         // Create and return AuthenticationInfo with JWT token as principal
