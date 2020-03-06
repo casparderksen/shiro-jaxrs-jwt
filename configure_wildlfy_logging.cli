@@ -1,4 +1,6 @@
 connect
 /subsystem=logging/logger=com.acme:add(level=DEBUG)
-/subsystem=logging/logger=org.apache.shiro.jwt:add(level=DEBUG)
+/subsystem=logging/logger=org.apache.shiro.authz.provider:add(level=DEBUG)
+/subsystem=logging/logger=org.apache.shiro.web.filter.jwt:add(level=DEBUG)
+/subsystem=logging/logger=org.apache.shiro.realm.jwt:add(level=DEBUG)
 /subsystem=logging/console-handler=CONSOLE:write-attribute(name=level, value=DEBUG)

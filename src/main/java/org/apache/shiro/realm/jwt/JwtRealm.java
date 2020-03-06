@@ -1,7 +1,6 @@
-package org.apache.shiro.jwt;
+package org.apache.shiro.realm.jwt;
 
 import com.nimbusds.jwt.SignedJWT;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.authc.AuthenticationInfo;
@@ -11,12 +10,11 @@ import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
-import org.apache.shiro.config.ConfigurationException;
-import org.apache.shiro.config.Ini;
-import org.apache.shiro.realm.text.IniRealm;
-import org.apache.shiro.realm.text.TextConfigurationRealm;
+import org.apache.shiro.authz.provider.IniPermissionProvider;
+import org.apache.shiro.authz.provider.PermissionProvider;
+import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.util.CollectionUtils;
+import org.apache.shiro.web.filter.jwt.JwtFilter;
 
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
@@ -29,19 +27,12 @@ import java.util.Set;
  * Realm for adding access control based on JWT tokens.
  * Configure the <code>publicKey</code> property for validating tokens.
  * Configure {@link JwtFilter} for extracting JWT tokens from HTTP requests and performing the login to the realm.
- * TODO: composition with policy provider instead of inheriting from TextConfigurationRealm.
  */
 @Slf4j
-public class JwtRealm extends TextConfigurationRealm {
+public class JwtRealm extends AuthorizingRealm {
 
-    @Setter
-    private String resourcePath = "classpath:roles.ini";
     private RSAPublicKey rsaPublicKey;
-
-    @SneakyThrows
-    public void setPublicKey(byte[] publicKey) {
-        rsaPublicKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
-    }
+    private PermissionProvider permissionProvider;
 
     public JwtRealm() {
         // Support JwtAuthenticationToken for authentication
@@ -50,33 +41,16 @@ public class JwtRealm extends TextConfigurationRealm {
         setCachingEnabled(false);
     }
 
+    @SneakyThrows
+    public void setPublicKey(byte[] publicKey) {
+        rsaPublicKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
+    }
+
     @Override
     protected void onInit() {
-        super.onInit();
-        Ini ini = Ini.fromResourcePath(resourcePath);
-        if (CollectionUtils.isEmpty(ini)) {
-            throw new IllegalStateException("Cannot load Ini from resourcePath " + resourcePath);
-        }
-        processDefinitions(ini);
-    }
-
-    private void processDefinitions(Ini ini) {
-        Ini.Section rolesSection = ini.getSection(IniRealm.ROLES_SECTION_NAME);
-        if (CollectionUtils.isEmpty(rolesSection)) {
-            log.warn("No [{}] section defined, cannot assign permissions", IniRealm.ROLES_SECTION_NAME);
-        } else {
-            log.debug("Processing the [{}] section", IniRealm.ROLES_SECTION_NAME);
-            processRoleDefinitions(rolesSection);
-        }
-    }
-
-    @Override
-    protected void processDefinitions() {
-        try {
-            processRoleDefinitions();
-        } catch (ParseException e) {
-            String msg = "Unable to parse role definitions.";
-            throw new ConfigurationException(msg, e);
+        if (permissionProvider == null) {
+            permissionProvider = new IniPermissionProvider();
+            permissionProvider.init();
         }
     }
 
@@ -99,7 +73,7 @@ public class JwtRealm extends TextConfigurationRealm {
         // Check that the token has not expired
         if (!JwtVerifier.verifyExpirationDate(signedJWT)) {
             log.warn("token expired");
-            return null;
+            //return null;
         }
 
         // Create and return AuthenticationInfo with JWT token as principal
@@ -124,7 +98,7 @@ public class JwtRealm extends TextConfigurationRealm {
 
     private Set<String> getRoles(SignedJWT signedJWT) {
         try {
-            Set<String> roles = JwtParser.getRoles(signedJWT);
+            Set<String> roles = JwtUtil.getRoles(signedJWT);
             if (roles == null) {
                 throw new AuthorizationException("roles claim not specified");
             }
@@ -136,8 +110,8 @@ public class JwtRealm extends TextConfigurationRealm {
 
     private void addPermissions(SimpleAuthorizationInfo authzInfo, Collection<String> roles) {
         for (String role : roles) {
-            if (roleExists(role)) {
-                Collection<Permission> permissions = getRole(role).getPermissions();
+            if (permissionProvider.roleExists(role)) {
+                Collection<Permission> permissions = permissionProvider.getPermissions(role);
                 authzInfo.addObjectPermissions(permissions);
                 if (log.isDebugEnabled()) {
                     log.debug("added permissions from role {}", role);

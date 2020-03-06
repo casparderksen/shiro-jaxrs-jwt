@@ -1,4 +1,4 @@
-package org.apache.shiro.jwt;
+package org.apache.shiro.web.filter.jwt;
 
 import com.nimbusds.jwt.SignedJWT;
 import lombok.extern.slf4j.Slf4j;
@@ -6,6 +6,9 @@ import org.apache.shiro.ShiroException;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authz.AuthorizationException;
+import org.apache.shiro.realm.jwt.JwtAuthenticationToken;
+import org.apache.shiro.realm.jwt.JwtRealm;
+import org.apache.shiro.realm.jwt.JwtUtil;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.apache.shiro.web.filter.AccessControlFilter;
@@ -24,6 +27,8 @@ import java.text.ParseException;
  */
 @Slf4j
 public class JwtFilter extends AccessControlFilter {
+
+    private static final String BEARER = "Bearer";
 
     @Override
     public boolean onPreHandle(ServletRequest request, ServletResponse response, Object mappedValue) throws Exception {
@@ -69,8 +74,8 @@ public class JwtFilter extends AccessControlFilter {
     protected AuthenticationToken createAuthenticationToken(ServletRequest request) {
         try {
             String header = getAuthorizationHeader(request);
-            SignedJWT signedJWT = JwtParser.extractJwtToken(header);
-            return new JwtAuthenticationToken(JwtParser.getPrincipal(signedJWT), signedJWT);
+            SignedJWT signedJWT = extractJwtToken(header);
+            return new JwtAuthenticationToken(JwtUtil.getPrincipal(signedJWT), signedJWT);
         } catch (ParseException exception) {
             throw new AuthorizationException("invalid JWT token");
         }
@@ -83,5 +88,13 @@ public class JwtFilter extends AccessControlFilter {
             throw new AuthorizationException("missing Authorization header");
         }
         return header;
+    }
+
+    private static SignedJWT extractJwtToken(String authorizationHeader) throws ParseException {
+        String[] parts = authorizationHeader.split("\\s+");
+        if (parts.length != 2 || !parts[0].equalsIgnoreCase(BEARER)) {
+            throw new ParseException("missing Bearer token", 0);
+        }
+        return SignedJWT.parse(parts[1]);
     }
 }

@@ -1,4 +1,4 @@
-package org.apache.shiro.jwt;
+package org.apache.shiro.realm.jwt;
 
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.shiro.authc.AuthenticationToken;

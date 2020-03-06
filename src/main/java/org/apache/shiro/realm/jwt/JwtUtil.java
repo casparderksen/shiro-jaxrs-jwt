@@ -1,4 +1,4 @@
-package org.apache.shiro.jwt;
+package org.apache.shiro.realm.jwt;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -8,23 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class JwtParser {
-
-    private static final String BEARER = "Bearer";
-
-    /**
-     * Extracts JWT bearer token from HTTP Authorization header
-     * @param authorizationHeader value of the Authorization header
-     * @return parsed JWT token
-     * @throws ParseException invalid header or token
-     */
-    public static SignedJWT extractJwtToken(String authorizationHeader) throws ParseException {
-        String[] parts = authorizationHeader.split("\\s+");
-        if (parts.length != 2 || !parts[0].equalsIgnoreCase(BEARER)) {
-            throw new ParseException("missing Bearer token", 0);
-        }
-        return SignedJWT.parse(parts[1]);
-    }
+public class JwtUtil {
 
     /**
      * Gets principal from JWT token
