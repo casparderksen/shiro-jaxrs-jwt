@@ -1,21 +1,25 @@
 package org.apache.shiro.jwt;
 
 import com.nimbusds.jwt.SignedJWT;
-import lombok.RequiredArgsConstructor;
 import org.apache.shiro.authc.AuthenticationToken;
 
-@RequiredArgsConstructor
 public class JwtAuthenticationToken implements AuthenticationToken {
 
-    private final SignedJWT signedJWT;
+    private final String principal;
+    private final SignedJWT credentials;
 
-    @Override
-    public Object getPrincipal() {
-        return signedJWT;
+    public JwtAuthenticationToken(String principal, SignedJWT signedJWT) {
+        this.principal = principal;
+        this.credentials = signedJWT;
     }
 
     @Override
-    public Object getCredentials() {
-        return signedJWT;
+    public String getPrincipal() {
+        return principal;
+    }
+
+    @Override
+    public SignedJWT getCredentials() {
+        return credentials;
     }
 }

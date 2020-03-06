@@ -1,18 +1,16 @@
 package org.apache.shiro.jwt;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
-import org.apache.shiro.authz.*;
+import org.apache.shiro.authz.AuthorizationException;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.Permission;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.config.ConfigurationException;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.realm.text.IniRealm;
@@ -24,7 +22,8 @@ import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * Realm for adding access control based on JWT tokens.
@@ -63,8 +62,7 @@ public class JwtRealm extends TextConfigurationRealm {
         Ini.Section rolesSection = ini.getSection(IniRealm.ROLES_SECTION_NAME);
         if (CollectionUtils.isEmpty(rolesSection)) {
             log.warn("No [{}] section defined, cannot assign permissions", IniRealm.ROLES_SECTION_NAME);
-        }
-        else {
+        } else {
             log.debug("Processing the [{}] section", IniRealm.ROLES_SECTION_NAME);
             processRoleDefinitions(rolesSection);
         }
@@ -84,41 +82,54 @@ public class JwtRealm extends TextConfigurationRealm {
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) {
         // Safe cast because we told the security manager to support JwtAuthenticationToken
         JwtAuthenticationToken jwtAuthenticationToken = (JwtAuthenticationToken) token;
-        // Safe cast because JwtAuthenticationToken contains SignedJWT as credentials
-        SignedJWT signedJWT = (SignedJWT) jwtAuthenticationToken.getCredentials();
+        String principal = jwtAuthenticationToken.getPrincipal();
+        if (log.isDebugEnabled()) {
+            log.debug("authenticating principal {}", principal);
+        }
 
         // Check that the token is valid
-        if (!JwtUtil.verifyJwtToken(signedJWT, rsaPublicKey)) {
+        SignedJWT signedJWT = jwtAuthenticationToken.getCredentials();
+        if (!JwtVerifier.verifyJwtToken(signedJWT, rsaPublicKey)) {
             log.warn("token invalid");
             return null;
         }
 
         // Check that the token has not expired
-        if (!JwtUtil.verifyExpirationDate(signedJWT)) {
+        if (!JwtVerifier.verifyExpirationDate(signedJWT)) {
             log.warn("token expired");
             return null;
         }
 
-        // Create and return AuthenticationInfo
-        return new SimpleAuthenticationInfo(token.getPrincipal(), token.getCredentials(), getName());
+        // Create and return AuthenticationInfo with JWT token as principal
+        return new SimpleAuthenticationInfo(signedJWT, signedJWT, getName());
     }
 
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
-        // Get SignedJWT stored as principal in a JwtAuthenticationToken
+        // Get JWT from principal collection
         SignedJWT signedJWT = principals.oneByType(SignedJWT.class);
-        JWTClaimsSet jwtClaimsSet = JwtUtil.getJwtClaimsSet(signedJWT);
-        if (log.isDebugEnabled()) {
-            log.debug("authorizing principal {}", JwtUtil.getPrincipal(jwtClaimsSet));
+        if (signedJWT == null) {
+            log.error("SignedJWT not found in principal collection");
+            return null;
         }
 
-        // Get roles from JWT token
-        Set<String> roles = JwtUtil.getRoles(jwtClaimsSet);
-
-        // Create AuthorizationInfo with roles and permissions for these roles
+        // Create AuthorizationInfo with roles from JWT and permissions from realm
+        Set<String> roles = getRoles(signedJWT);
         SimpleAuthorizationInfo authzInfo = new SimpleAuthorizationInfo(roles);
         addPermissions(authzInfo, roles);
         return authzInfo;
+    }
+
+    private Set<String> getRoles(SignedJWT signedJWT) {
+        try {
+            Set<String> roles = JwtParser.getRoles(signedJWT);
+            if (roles == null) {
+                throw new AuthorizationException("roles claim not specified");
+            }
+            return roles;
+        } catch (ParseException exception) {
+            throw new AuthorizationException(exception);
+        }
     }
 
     private void addPermissions(SimpleAuthorizationInfo authzInfo, Collection<String> roles) {
