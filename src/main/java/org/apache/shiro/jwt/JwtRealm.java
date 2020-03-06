@@ -46,6 +46,8 @@ public class JwtRealm extends TextConfigurationRealm {
     public JwtRealm() {
         // Support JwtAuthenticationToken for authentication
         setAuthenticationTokenClass(JwtAuthenticationToken.class);
+        // Do not cache tokens that should expire fast
+        setCachingEnabled(false);
     }
 
     @Override
