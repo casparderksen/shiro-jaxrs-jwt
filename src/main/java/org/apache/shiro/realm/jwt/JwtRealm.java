@@ -56,7 +56,6 @@ public class JwtRealm extends AuthorizingRealm implements PolicyProviderAware {
         }
     }
 
-
     public PolicyProvider getPolicyProvider() {
         return policyProvider;
     }
