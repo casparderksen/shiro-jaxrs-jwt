@@ -1,6 +1,5 @@
 package org.apache.shiro.authz.policy.text;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleRole;
 import org.apache.shiro.authz.policy.Policy;
@@ -10,7 +9,6 @@ import org.apache.shiro.realm.text.TextConfigurationRealm;
 import java.util.Collections;
 import java.util.Set;
 
-@Slf4j
 public class TextPolicyProvider extends TextConfigurationRealm implements PolicyProvider {
 
     @Override

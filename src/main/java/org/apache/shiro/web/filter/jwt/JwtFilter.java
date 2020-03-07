@@ -1,7 +1,6 @@
 package org.apache.shiro.web.filter.jwt;
 
 import com.nimbusds.jwt.SignedJWT;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.ShiroException;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationToken;
@@ -13,6 +12,8 @@ import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.apache.shiro.web.filter.AccessControlFilter;
 import org.apache.shiro.web.util.WebUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -25,9 +26,9 @@ import java.text.ParseException;
  * Filter for extracting JWT token from HTTP request. This filter does not validate the token.
  * Configure a {@link JwtRealm} for validating tokens and extracting roles.
  */
-@Slf4j
 public class JwtFilter extends AccessControlFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
     private static final String BEARER = "Bearer";
 
     @Override

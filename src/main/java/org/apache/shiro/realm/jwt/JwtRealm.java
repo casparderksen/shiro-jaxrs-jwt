@@ -1,10 +1,6 @@
 package org.apache.shiro.realm.jwt;
 
 import com.nimbusds.jwt.SignedJWT;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
@@ -12,16 +8,21 @@ import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
+import org.apache.shiro.authz.policy.Policy;
 import org.apache.shiro.authz.policy.PolicyProvider;
 import org.apache.shiro.authz.policy.PolicyProviderAware;
 import org.apache.shiro.authz.policy.text.IniPolicyProvider;
-import org.apache.shiro.authz.policy.Policy;
+import org.apache.shiro.config.ConfigurationException;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.web.filter.jwt.JwtFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.util.Collection;
@@ -32,12 +33,11 @@ import java.util.Set;
  * Configure the <code>publicKey</code> property for validating tokens.
  * Configure {@link JwtFilter} for extracting JWT tokens from HTTP requests and performing the login to the realm.
  */
-@Slf4j
 public class JwtRealm extends AuthorizingRealm implements PolicyProviderAware {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtRealm.class);
+
     private Policy policy;
-    @Getter
-    @Setter
     private PolicyProvider policyProvider;
     private RSAPublicKey rsaPublicKey;
 
@@ -48,9 +48,21 @@ public class JwtRealm extends AuthorizingRealm implements PolicyProviderAware {
         setCachingEnabled(false);
     }
 
-    @SneakyThrows
     public void setPublicKey(byte[] publicKey) {
-        rsaPublicKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
+        try {
+            rsaPublicKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException exception) {
+            throw new ConfigurationException("invalid publicKey", exception);
+        }
+    }
+
+
+    public PolicyProvider getPolicyProvider() {
+        return policyProvider;
+    }
+
+    public void setPolicyProvider(PolicyProvider policyProvider) {
+        this.policyProvider = policyProvider;
     }
 
     @Override

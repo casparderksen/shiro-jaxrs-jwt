@@ -1,16 +1,20 @@
 package org.apache.shiro.authz.policy.text;
 
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.realm.text.IniRealm;
 import org.apache.shiro.util.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class IniPolicyProvider extends TextPolicyProvider {
 
-    @Setter
+    private static final Logger log = LoggerFactory.getLogger(IniPolicyProvider.class);
+
     private String resourcePath = "classpath:roles.ini";
+
+    public void setResourcePath(String resourcePath) {
+        this.resourcePath = resourcePath;
+    }
 
     @Override
     protected void onInit() {
