@@ -1,6 +1,8 @@
 package org.apache.shiro.realm.jwt;
 
 import com.nimbusds.jwt.SignedJWT;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.authc.AuthenticationInfo;
@@ -10,8 +12,10 @@ import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
-import org.apache.shiro.authz.provider.IniPermissionProvider;
-import org.apache.shiro.authz.provider.PermissionProvider;
+import org.apache.shiro.authz.policy.PolicyProvider;
+import org.apache.shiro.authz.policy.PolicyProviderAware;
+import org.apache.shiro.authz.policy.text.IniPolicyProvider;
+import org.apache.shiro.authz.policy.Policy;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.web.filter.jwt.JwtFilter;
@@ -29,9 +33,12 @@ import java.util.Set;
  * Configure {@link JwtFilter} for extracting JWT tokens from HTTP requests and performing the login to the realm.
  */
 @Slf4j
-public class JwtRealm extends AuthorizingRealm {
+public class JwtRealm extends AuthorizingRealm implements PolicyProviderAware {
 
-    private PermissionProvider permissionProvider;
+    private Policy policy;
+    @Getter
+    @Setter
+    private PolicyProvider policyProvider;
     private RSAPublicKey rsaPublicKey;
 
     public JwtRealm() {
@@ -48,9 +55,14 @@ public class JwtRealm extends AuthorizingRealm {
 
     @Override
     protected void onInit() {
-        if (permissionProvider == null) {
-            permissionProvider = new IniPermissionProvider();
-            permissionProvider.init();
+        initPolicyProvider();
+        policy = getPolicyProvider().getPolicy();
+    }
+
+    protected void initPolicyProvider() {
+        if (getPolicyProvider() == null) {
+            setPolicyProvider(new IniPolicyProvider());
+            getPolicyProvider().init();
         }
     }
 
@@ -110,8 +122,8 @@ public class JwtRealm extends AuthorizingRealm {
 
     private void addPermissions(SimpleAuthorizationInfo authzInfo, Collection<String> roles) {
         for (String role : roles) {
-            if (permissionProvider.roleExists(role)) {
-                Collection<Permission> permissions = permissionProvider.getPermissions(role);
+            if (policy.roleExists(role)) {
+                Collection<Permission> permissions = policy.getPermissions(role);
                 authzInfo.addObjectPermissions(permissions);
                 if (log.isDebugEnabled()) {
                     log.debug("added permissions from role {}", role);

@@ -1,27 +1,16 @@
-package org.apache.shiro.authz.provider;
+package org.apache.shiro.authz.policy.text;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shiro.authz.Permission;
-import org.apache.shiro.config.ConfigurationException;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.realm.text.IniRealm;
-import org.apache.shiro.realm.text.TextConfigurationRealm;
 import org.apache.shiro.util.CollectionUtils;
 
-import java.text.ParseException;
-import java.util.Collection;
-
 @Slf4j
-public class IniPermissionProvider extends TextConfigurationRealm implements PermissionProvider {
+public class IniPolicyProvider extends TextPolicyProvider {
 
     @Setter
     private String resourcePath = "classpath:roles.ini";
-
-    @Override
-    public Collection<Permission> getPermissions(String role) {
-        return getRole(role).getPermissions();
-    }
 
     @Override
     protected void onInit() {
@@ -40,16 +29,6 @@ public class IniPermissionProvider extends TextConfigurationRealm implements Per
         } else {
             log.debug("Processing the [{}] section", IniRealm.ROLES_SECTION_NAME);
             processRoleDefinitions(rolesSection);
-        }
-    }
-
-    @Override
-    protected void processDefinitions() {
-        try {
-            processRoleDefinitions();
-        } catch (ParseException e) {
-            String msg = "Unable to parse role definitions.";
-            throw new ConfigurationException(msg, e);
         }
     }
 }
