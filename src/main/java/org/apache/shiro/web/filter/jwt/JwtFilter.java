@@ -43,8 +43,9 @@ public class JwtFilter extends AccessControlFilter {
 
     @Override
     protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) {
-        AuthenticationToken token = createAuthenticationToken(request);
+        AuthenticationToken token = null;
         try {
+            token = createAuthenticationToken(request);
             Subject subject = getSubject(request, response);
             subject.login(token);
             return onAuthorizationSuccess(token, subject, request, response);
@@ -61,7 +62,7 @@ public class JwtFilter extends AccessControlFilter {
     }
 
     protected boolean onAuthorizationFailure(AuthenticationToken token, ShiroException exception, ServletRequest request, ServletResponse response) {
-        log.warn("unauthorized request for principal {} from {}", token.getPrincipal(), request.getRemoteAddr());
+        log.warn("unauthorized request from {}", request.getRemoteAddr());
         return false;
     }
 
