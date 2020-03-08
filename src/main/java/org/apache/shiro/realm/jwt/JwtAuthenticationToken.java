@@ -5,16 +5,16 @@ import org.apache.shiro.authc.AuthenticationToken;
 
 public class JwtAuthenticationToken implements AuthenticationToken {
 
-    private final String principal;
+    private final JwtPrincipal principal;
     private final SignedJWT credentials;
 
-    public JwtAuthenticationToken(String principal, SignedJWT signedJWT) {
-        this.principal = principal;
-        this.credentials = signedJWT;
+    public JwtAuthenticationToken(SignedJWT signedJWT) {
+        principal = new JwtPrincipal(signedJWT);
+        credentials = signedJWT;
     }
 
     @Override
-    public String getPrincipal() {
+    public JwtPrincipal getPrincipal() {
         return principal;
     }
 

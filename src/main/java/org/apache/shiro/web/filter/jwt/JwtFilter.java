@@ -2,12 +2,10 @@ package org.apache.shiro.web.filter.jwt;
 
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.shiro.ShiroException;
-import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.realm.jwt.JwtAuthenticationToken;
 import org.apache.shiro.realm.jwt.JwtRealm;
-import org.apache.shiro.realm.jwt.JwtUtil;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.apache.shiro.web.filter.AccessControlFilter;
@@ -49,7 +47,7 @@ public class JwtFilter extends AccessControlFilter {
             Subject subject = getSubject(request, response);
             subject.login(token);
             return onAuthorizationSuccess(token, subject, request, response);
-        } catch (AuthenticationException | AuthorizationException exception) {
+        } catch (ShiroException exception) {
             return onAuthorizationFailure(token, exception, request, response);
         }
     }
@@ -77,7 +75,7 @@ public class JwtFilter extends AccessControlFilter {
         try {
             String header = getAuthorizationHeader(request);
             SignedJWT signedJWT = extractJwtToken(header);
-            return new JwtAuthenticationToken(JwtUtil.getPrincipal(signedJWT), signedJWT);
+            return new JwtAuthenticationToken(signedJWT);
         } catch (ParseException exception) {
             throw new AuthorizationException("invalid JWT token");
         }

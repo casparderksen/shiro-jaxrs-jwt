@@ -4,13 +4,11 @@ import com.nimbusds.jwt.SignedJWT;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
-import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.authz.policy.Policy;
 import org.apache.shiro.authz.policy.PolicyProvider;
-import org.apache.shiro.authz.policy.PolicyProviderAware;
 import org.apache.shiro.authz.policy.text.IniPolicyProvider;
 import org.apache.shiro.config.ConfigurationException;
 import org.apache.shiro.realm.AuthorizingRealm;
@@ -24,7 +22,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.text.ParseException;
 import java.util.Collection;
 import java.util.Set;
 
@@ -33,7 +30,7 @@ import java.util.Set;
  * Configure the <code>publicKey</code> property for validating tokens.
  * Configure {@link JwtFilter} for extracting JWT tokens from HTTP requests and performing the login to the realm.
  */
-public class JwtRealm extends AuthorizingRealm implements PolicyProviderAware {
+public class JwtRealm extends AuthorizingRealm implements PolicyProvider {
 
     private static final Logger log = LoggerFactory.getLogger(JwtRealm.class);
 
@@ -56,34 +53,37 @@ public class JwtRealm extends AuthorizingRealm implements PolicyProviderAware {
         }
     }
 
-    public PolicyProvider getPolicyProvider() {
-        return policyProvider;
-    }
-
     public void setPolicyProvider(PolicyProvider policyProvider) {
         this.policyProvider = policyProvider;
     }
 
     @Override
     protected void onInit() {
-        initPolicyProvider();
-        policy = getPolicyProvider().getPolicy();
+        if (policyProvider == null) {
+            policyProvider = new IniPolicyProvider();
+            policyProvider.init();
+        }
+        policy = policyProvider.getPolicy();
     }
 
-    protected void initPolicyProvider() {
-        if (getPolicyProvider() == null) {
-            setPolicyProvider(new IniPolicyProvider());
-            getPolicyProvider().init();
-        }
+    @Override
+    public Policy getPolicy() {
+        return policy;
     }
 
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) {
         // Safe cast because we told the security manager to support JwtAuthenticationToken
         JwtAuthenticationToken jwtAuthenticationToken = (JwtAuthenticationToken) token;
-        String principal = jwtAuthenticationToken.getPrincipal();
-        if (log.isDebugEnabled()) {
-            log.debug("authenticating principal {}", principal);
+        JwtPrincipal principal = jwtAuthenticationToken.getPrincipal();
+
+        // Check that principal name is defined
+        String name = principal.getName();
+        if (name == null) {
+            log.warn("token does not specify principal");
+            return null;
+        } else if (log.isDebugEnabled()) {
+            log.debug("authenticating principal {}", name);
         }
 
         // Check that the token is valid
@@ -100,35 +100,23 @@ public class JwtRealm extends AuthorizingRealm implements PolicyProviderAware {
         }
 
         // Create and return AuthenticationInfo with JWT token as principal
-        return new SimpleAuthenticationInfo(signedJWT, signedJWT, getName());
+        return new SimpleAuthenticationInfo(principal, signedJWT, getName());
     }
 
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
         // Get JWT from principal collection
-        SignedJWT signedJWT = principals.oneByType(SignedJWT.class);
-        if (signedJWT == null) {
-            log.error("SignedJWT not found in principal collection");
+        JwtPrincipal jwtPrincipal = principals.oneByType(JwtPrincipal.class);
+        if (jwtPrincipal == null) {
+            log.error("JwtPrincipal not found in principal collection");
             return null;
         }
 
         // Create AuthorizationInfo with roles from JWT and permissions from realm
-        Set<String> roles = getRoles(signedJWT);
+        Set<String> roles = jwtPrincipal.getRoles();
         SimpleAuthorizationInfo authzInfo = new SimpleAuthorizationInfo(roles);
         addPermissions(authzInfo, roles);
         return authzInfo;
-    }
-
-    private Set<String> getRoles(SignedJWT signedJWT) {
-        try {
-            Set<String> roles = JwtUtil.getRoles(signedJWT);
-            if (roles == null) {
-                throw new AuthorizationException("roles claim not specified");
-            }
-            return roles;
-        } catch (ParseException exception) {
-            throw new AuthorizationException(exception);
-        }
     }
 
     private void addPermissions(SimpleAuthorizationInfo authzInfo, Collection<String> roles) {

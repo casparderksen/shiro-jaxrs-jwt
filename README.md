@@ -9,7 +9,10 @@ The JwtRealm authenticates principals by validating the JWT token (note that the
 before obtaining the token). Principals are authorized by extracting roles from the token, and looking up permissions
 associated with the role in roles.ini (same syntax as shiro.ini).
 
+Permissions are exposed for usage in the front-end by a permissions endpoint. This endpoint returns all
+permissions associated with the roles in the JWT token.
+
 TODO/wishlist:
-- Angular integration
+- Angular demo
 - JEE8/MicroProfile integration
 - Quarkus integration (Vert.x, without servlet)
