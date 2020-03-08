@@ -1,6 +1,6 @@
 package com.acme.permissions.adapter.rest;
 
-import com.acme.permissions.service.PermissionsService;
+import org.apache.shiro.authz.service.PermissionsService;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 
@@ -28,7 +28,7 @@ public class PermissionsResource {
     @RequiresPermissions("permissions:read")
     @GET
     public JsonArray getPermissions(@Context SecurityContext securityContext) {
-        Set<Permission> permissions = permissionsService.getJwtPermissions(securityContext.getUserPrincipal());
+        Set<Permission> permissions = permissionsService.getPermissions(securityContext.getUserPrincipal());
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
         permissions.forEach(permission -> arrayBuilder.add(permission.toString()));
         return arrayBuilder.build();
