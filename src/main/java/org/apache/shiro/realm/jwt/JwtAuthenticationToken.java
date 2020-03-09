@@ -14,8 +14,7 @@ public class JwtAuthenticationToken implements AuthenticationToken {
 
     public JwtAuthenticationToken(SignedJWT signedJWT) {
         try {
-            JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
-            principal = new JwtPrincipal(jwtClaimsSet);
+            principal = new JwtPrincipal(signedJWT.getJWTClaimsSet());
             credentials = signedJWT;
         } catch (ParseException exception) {
             throw new ShiroException("invalid JWT token");
