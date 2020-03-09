@@ -13,6 +13,6 @@ Permissions are exposed for usage in the front-end by a permissions endpoint. Th
 permissions associated with the roles in the JWT token.
 
 TODO/wishlist:
-- Angular demo
+- Angular demo. Plan: use NPM shiro-trie, define directives for checking.
 - JEE8/MicroProfile integration
 - Quarkus integration (Vert.x, without servlet)

@@ -1,7 +1,11 @@
 package org.apache.shiro.realm.jwt;
 
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.apache.shiro.ShiroException;
 import org.apache.shiro.authc.AuthenticationToken;
+
+import java.text.ParseException;
 
 public class JwtAuthenticationToken implements AuthenticationToken {
 
@@ -9,8 +13,13 @@ public class JwtAuthenticationToken implements AuthenticationToken {
     private final SignedJWT credentials;
 
     public JwtAuthenticationToken(SignedJWT signedJWT) {
-        principal = new JwtPrincipal(signedJWT);
-        credentials = signedJWT;
+        try {
+            JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
+            principal = new JwtPrincipal(jwtClaimsSet);
+            credentials = signedJWT;
+        } catch (ParseException exception) {
+            throw new ShiroException("invalid JWT token");
+        }
     }
 
     @Override

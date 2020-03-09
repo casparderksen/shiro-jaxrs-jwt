@@ -75,10 +75,10 @@ public class JwtRealm extends AuthorizingRealm implements PolicyProvider {
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) {
         // Safe cast because we told the security manager to support JwtAuthenticationToken
         JwtAuthenticationToken jwtAuthenticationToken = (JwtAuthenticationToken) token;
-        JwtPrincipal principal = jwtAuthenticationToken.getPrincipal();
+        JwtPrincipal jwtPrincipal = jwtAuthenticationToken.getPrincipal();
 
         // Check that principal name is defined
-        String name = principal.getName();
+        String name = jwtPrincipal.getName();
         if (name == null) {
             log.warn("token does not specify principal");
             return null;
@@ -100,7 +100,7 @@ public class JwtRealm extends AuthorizingRealm implements PolicyProvider {
         }
 
         // Create and return AuthenticationInfo with JWT token as principal
-        return new SimpleAuthenticationInfo(principal, signedJWT, getName());
+        return new SimpleAuthenticationInfo(jwtPrincipal, signedJWT, getName());
     }
 
     @Override
@@ -116,6 +116,7 @@ public class JwtRealm extends AuthorizingRealm implements PolicyProvider {
         Set<String> roles = jwtPrincipal.getRoles();
         SimpleAuthorizationInfo authzInfo = new SimpleAuthorizationInfo(roles);
         addPermissions(authzInfo, roles);
+        jwtPrincipal.setPermissions(authzInfo.getObjectPermissions());
         return authzInfo;
     }
 

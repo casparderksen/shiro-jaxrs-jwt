@@ -11,14 +11,13 @@ import java.util.Set;
 public class JwtUtil {
 
     /**
-     * Gets principal from JWT token
+     * Gets principal from JWT claim set
      *
-     * @param signedJWT the JWT token
+     * @param jwtClaimsSet the claim set
      * @return value of upn claim, or null when not available
      * @throws ParseException on invalid token
      */
-    public static String getPrincipal(SignedJWT signedJWT) throws ParseException {
-        JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
+    public static String getPrincipal(JWTClaimsSet jwtClaimsSet) throws ParseException {
         if (jwtClaimsSet == null) {
             return null;
         }
@@ -26,14 +25,13 @@ public class JwtUtil {
     }
 
     /**
-     * Gets roles from JWT token
+     * Gets roles from JWT claim set
      *
-     * @param signedJWT the JWT token
+     * @param jwtClaimsSet the claim set
      * @return value of roles claim, or null when  not available
      * @throws ParseException on invalid token
      */
-    public static Set<String> getRoles(SignedJWT signedJWT) throws ParseException {
-        JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
+    public static Set<String> getRoles(JWTClaimsSet jwtClaimsSet) throws ParseException {
         if (jwtClaimsSet == null) {
             return null;
         }
