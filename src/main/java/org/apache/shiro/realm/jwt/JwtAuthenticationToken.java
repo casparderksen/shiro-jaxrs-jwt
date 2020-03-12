@@ -1,6 +1,5 @@
 package org.apache.shiro.realm.jwt;
 
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.shiro.ShiroException;
 import org.apache.shiro.authc.AuthenticationToken;

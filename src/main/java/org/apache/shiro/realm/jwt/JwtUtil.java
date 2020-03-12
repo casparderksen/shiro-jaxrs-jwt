@@ -1,12 +1,10 @@
 package org.apache.shiro.realm.jwt;
 
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
+import org.apache.shiro.ShiroException;
 
 import java.text.ParseException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class JwtUtil {
 
@@ -14,32 +12,29 @@ public class JwtUtil {
      * Gets principal from JWT claim set
      *
      * @param jwtClaimsSet the claim set
-     * @return value of upn claim, or null when not available
-     * @throws ParseException on invalid token
+     * @return optional value of upn claim
      */
-    public static String getPrincipal(JWTClaimsSet jwtClaimsSet) throws ParseException {
-        if (jwtClaimsSet == null) {
-            return null;
+    public static Optional<String> getPrincipal(JWTClaimsSet jwtClaimsSet) {
+        try {
+            return Optional.ofNullable(jwtClaimsSet.getStringClaim(Claims.upn.name()));
+        } catch (ParseException exception) {
+            throw new ShiroException(exception);
         }
-        return jwtClaimsSet.getStringClaim(Claims.upn.name());
     }
 
     /**
      * Gets roles from JWT claim set
      *
      * @param jwtClaimsSet the claim set
-     * @return value of roles claim, or null when  not available
-     * @throws ParseException on invalid token
+     * @return value of roles claim, or empty set when not available
      */
-    public static Set<String> getRoles(JWTClaimsSet jwtClaimsSet) throws ParseException {
-        if (jwtClaimsSet == null) {
-            return null;
+    public static Set<String> getRoles(JWTClaimsSet jwtClaimsSet) {
+        try {
+            List<String> roles = jwtClaimsSet.getStringListClaim(Claims.groups.name());
+            return roles == null ? Collections.emptySet() : new HashSet<>(roles);
+        } catch (ParseException exception) {
+            throw new ShiroException(exception);
         }
-        List<String> roles = jwtClaimsSet.getStringListClaim(Claims.groups.name());
-        if (roles == null) {
-            return null;
-        }
-        return new HashSet<>(roles);
     }
 
     private enum Claims {
